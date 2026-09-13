@@ -108,13 +108,13 @@ def capa0_sensor_humano(df: pd.DataFrame) -> pd.DataFrame:
 def capa1_estrategia_categoria(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
     politicas_margen = {
-        'KVI_known _Value_Item': 0.15,
+        'KVI_known_Value_Item': 0.15,
         'NICHO': 0.40,
         'GENERICO': 0.30,
         'BIOEQUIVALENTE_MARCA': 0.18
     }
     politicas_shock = {
-        'KVI_known _Value_Item': 20000,
+        'KVI_known_Value_Item': 20000,
         'NICHO': 10000,
         'GENERICO': 4000,
         'BIOEQUIVALENTE_MARCA': 25000
