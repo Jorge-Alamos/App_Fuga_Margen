@@ -108,20 +108,21 @@ def capa0_sensor_humano(df: pd.DataFrame) -> pd.DataFrame:
 def capa1_estrategia_categoria(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
     politicas_margen = {
-        'CRONICO_MARCA': 0.25,
-        'CRONICO_GENERICO': 0.35,
-        'AGUDO_MARCA': 0.30,
-        'CONSUMO_MASIVO': 0.18
+        'KVI_known _Value_Item': 0.15,
+        'NICHO': 0.40,
+        'GENERICO': 0.30,
+        'BIOEQUIVALENTE_MARCA': 0.18
     }
     politicas_shock = {
-        'CRONICO_MARCA': 30000,
-        'CRONICO_GENERICO': 5000,
-        'AGUDO_MARCA': 15000,
-        'CONSUMO_MASIVO': 8000
+        'KVI_known _Value_Item': 20000,
+        'NICHO': 10000,
+        'GENERICO': 4000,
+        'BIOEQUIVALENTE_MARCA': 25000
     }
     df_out['Margen_Teorico_Base'] = df_out['Categoria_Producto'].map(politicas_margen).fillna(0.25)
     df_out['Umbral_Shock_Costo'] = df_out['Categoria_Producto'].map(politicas_shock).fillna(30000)
     return df_out
+
 
 @monitor_pipeline
 def capa2_costos(df: pd.DataFrame) -> pd.DataFrame:
