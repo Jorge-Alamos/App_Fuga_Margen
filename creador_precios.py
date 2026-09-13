@@ -61,7 +61,7 @@ septiembre 2026\t\t\t\t\t#DIV/0!\t#DIV/0!"""
     }
     df_base['Mes_Ano'] = pd.to_datetime(df_base['Mes_Ano'].str.lower().replace(month_map, regex=True), format='%b %Y', errors='coerce')
     df_base = df_base.sort_values(by='Mes_Ano').reset_index(drop=True)
-    df_base['Categoria_Producto'] = 'CRONICO_MARCA'
+    df_base['Categoria_Producto'] = 'BIOEQUIVALENTE_MARCA'
 
     # B. Historial de Inflación (IPC)
     data_ipc = """Mes / Año\tIPC INE subclase medicamentos
