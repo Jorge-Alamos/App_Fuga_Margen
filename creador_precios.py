@@ -1,12 +1,15 @@
+# creador_precios.py - Backend del Gemelo Digital de Pricing Solufar
+
 import pandas as pd
 import numpy as np
 import functools
 from io import StringIO
 
+# ==============================================================================
+# 1. INGESTA Y LIMPIEZA DE DATOS
+# ==============================================================================
 def cargar_datos():
-    # ==============================================================================
-    # 1. DATOS BASE
-    # ==============================================================================
+    # A. Historial de Ventas (Odoo)
     data_ventas = """Mes / Año\tTotal\tCtdad Ordenada\tBase imponible\tMargen\t% Margen\tPrecio_unitario\tCosto_unitario
 noviembre 2023\t$55,920\t2\t$46,992\t$21,145\t45.0%\t27960\t15379
 diciembre 2023\t$139,800\t5\t$117,480\t$52,440\t44.6%\t27960\t15480
@@ -60,6 +63,7 @@ septiembre 2026\t\t\t\t\t#DIV/0!\t#DIV/0!"""
     df_base = df_base.sort_values(by='Mes_Ano').reset_index(drop=True)
     df_base['Categoria_Producto'] = 'CRONICO_MARCA'
 
+    # B. Historial de Inflación (IPC)
     data_ipc = """Mes / Año\tIPC INE subclase medicamentos
 Noviembre 2023\t0,5\nDiciembre 2023\t-1,8\nEnero 2024\t-0,2\nFebrero 2024\t0,5\nMarzo 2024\t2,0\nAbril 2024\t0,6\nMayo 2024\t0,0\nJunio 2024\t0,1\nJulio 2024\t1,1\nAgosto 2024\t-0,9\nSeptiembre 2024\t1,7\nOctubre 2024\t1,1\nNoviembre 2024\t0,4\nDiciembre 2024\t0,4\nEnero 2025\t1,9\nFebrero 2025\t0,3\nMarzo 2025\t0,1\nAbril 2025\t0,1\nMayo 2025\t-1,3\nJunio 2025\t1,2\nJulio 2025\t1,1\nAgosto 2025\t0,3\nSeptiembre 2025\t0,5\nOctubre 2025\t-1,1\nNoviembre 2025\t1,3\nDiciembre 2025\t0,3\nEnero 2026\t1,3\nFebrero 2026\t1,5\nMarzo 2026\t-0,9\nAbril 2026\t1,1\nMayo 2026\t-0,2\nJunio 2026\t1,6"""
     df_ipc = pd.read_csv(StringIO(data_ipc), sep='\t')
@@ -68,6 +72,7 @@ Noviembre 2023\t0,5\nDiciembre 2023\t-1,8\nEnero 2024\t-0,2\nFebrero 2024\t0,5\n
     month_map_ipc = {k.capitalize(): v for k, v in month_map.items()}
     df_ipc['Mes_Ano'] = pd.to_datetime(df_ipc['Mes_Ano'].replace(month_map_ipc, regex=True), format='%b %Y', errors='coerce')
 
+    # C. Historial de Compras (Odoo)
     csv_compras = """Referencia,Fecha_Confirmacion,Cantidad_Total
 OC08713,2026-05-25,6\nOC08656,2026-05-19,6\nOC08543,2026-05-08,3\nOC08276,2026-04-09,2\nOC08194,2026-03-31,3\nOC07934,2026-02-27,2\nOC07842,2026-02-17,2\nOC07605,2026-01-19,3\nOC07515,2026-01-07,3\nOC07425,2025-12-23,2\nOC07255,2025-12-04,2\nOC07215,2025-11-28,2\nOC07083,2025-11-12,11\nOC06117,2025-08-05,15\nOC05733,2025-06-10,5\nOC05413,2025-04-29,15\nOC04387,2024-11-05,6\nOC04137,2024-09-24,10\nOC04071,2024-09-10,20\nOC03720,2024-07-09,6\nOC03717,2024-07-09,10\nOC03559,2024-06-12,6\nOC03359,2024-05-14,10\nOC02940,2024-03-12,20\nOC02737,2024-02-07,6\nOC02144,2023-11-08,20"""
     df_compras = pd.read_csv(StringIO(csv_compras), parse_dates=['Fecha_Confirmacion'])
@@ -77,7 +82,7 @@ OC08713,2026-05-25,6\nOC08656,2026-05-19,6\nOC08543,2026-05-08,3\nOC08276,2026-0
     return df_base, df_ipc, df_compras_agg
 
 # ==============================================================================
-# 2. DEFINICIÓN DE CAPAS (Pipeline de Inteligencia)
+# 2. MONITOR Y CAPAS ALGORÍTMICAS
 # ==============================================================================
 def monitor_pipeline(func):
     @functools.wraps(func)
@@ -100,13 +105,32 @@ def capa0_sensor_humano(df: pd.DataFrame) -> pd.DataFrame:
     return df_out
 
 @monitor_pipeline
-def capa1_costos(df: pd.DataFrame, margen_teorico_base: float = 0.25) -> pd.DataFrame:
+def capa1_estrategia_categoria(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
-    post_shock = df_out['Costo_Unitario'] > 30000
+    politicas_margen = {
+        'CRONICO_MARCA': 0.25,
+        'CRONICO_GENERICO': 0.35,
+        'AGUDO_MARCA': 0.30,
+        'CONSUMO_MASIVO': 0.18
+    }
+    politicas_shock = {
+        'CRONICO_MARCA': 30000,
+        'CRONICO_GENERICO': 5000,
+        'AGUDO_MARCA': 15000,
+        'CONSUMO_MASIVO': 8000
+    }
+    df_out['Margen_Teorico_Base'] = df_out['Categoria_Producto'].map(politicas_margen).fillna(0.25)
+    df_out['Umbral_Shock_Costo'] = df_out['Categoria_Producto'].map(politicas_shock).fillna(30000)
+    return df_out
+
+@monitor_pipeline
+def capa2_costos(df: pd.DataFrame) -> pd.DataFrame:
+    df_out = df.copy()
+    post_shock = df_out['Costo_Unitario'] > df_out['Umbral_Shock_Costo']
     df_out['Margen_Objetivo_Activo'] = pd.Series(np.where(
         post_shock,
-        margen_teorico_base,
-        np.maximum(margen_teorico_base, df_out['Margen_Humano_Historico'])
+        df_out['Margen_Teorico_Base'],
+        np.maximum(df_out['Margen_Teorico_Base'], df_out['Margen_Humano_Historico'])
     )).clip(upper=0.99)
     df_out['Precio_Costo_Ideal'] = np.maximum(
         df_out['Costo_Unitario'] / (1 - df_out['Margen_Objetivo_Activo']),
@@ -115,7 +139,7 @@ def capa1_costos(df: pd.DataFrame, margen_teorico_base: float = 0.25) -> pd.Data
     return df_out
 
 @monitor_pipeline
-def capa2_inflacion(df: pd.DataFrame, df_inflacion: pd.DataFrame) -> pd.DataFrame:
+def capa3_inflacion(df: pd.DataFrame, df_inflacion: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
     df_out = pd.merge(df_out, df_inflacion, on='Mes_Ano', how='left')
     df_out['IPC_Mes'] = (df_out['IPC_INE_subclase_medicamentos'] / 100).fillna(0.0)
@@ -140,7 +164,7 @@ def capa2_inflacion(df: pd.DataFrame, df_inflacion: pd.DataFrame) -> pd.DataFram
     return df_out
 
 @monitor_pipeline
-def capa3_techos(df: pd.DataFrame) -> pd.DataFrame:
+def capa4_techos(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
     df_out['Techo_Competitivo'] = np.inf
     return df_out
@@ -175,7 +199,7 @@ def capa5_valvula_stock(df: pd.DataFrame, df_compras_data: pd.DataFrame) -> pd.D
     return df_out
 
 @monitor_pipeline
-def capa6_estrategia(df: pd.DataFrame) -> pd.DataFrame:
+def capa6_blindaje(df: pd.DataFrame) -> pd.DataFrame:
     df_out = df.copy()
     df_out['Piso_Seguridad_C6'] = np.maximum(
         df_out['Costo_Unitario'] / (1 - df_out['Margen_Objetivo_Activo']),
@@ -219,15 +243,16 @@ def capa7_orquestacion_pesos(df: pd.DataFrame) -> pd.DataFrame:
     return df_out
 
 # ==============================================================================
-# 3. FUNCIÓN ORQUESTADORA PARA LA APP
+# 3. ENSAMBLADOR PRINCIPAL (Exportado a app.py)
 # ==============================================================================
 def ejecutar_gemelo_digital():
     df_base, df_ipc, df_compras_agg = cargar_datos()
     df_trazabilidad = (df_base.pipe(capa0_sensor_humano)
-                              .pipe(capa1_costos, margen_teorico_base=0.25)
-                              .pipe(capa2_inflacion, df_inflacion=df_ipc)
-                              .pipe(capa3_techos)
+                              .pipe(capa1_estrategia_categoria)
+                              .pipe(capa2_costos)
+                              .pipe(capa3_inflacion, df_inflacion=df_ipc)
+                              .pipe(capa4_techos)
                               .pipe(capa5_valvula_stock, df_compras_data=df_compras_agg)
-                              .pipe(capa6_estrategia)
+                              .pipe(capa6_blindaje)
                               .pipe(capa7_orquestacion_pesos))
     return df_trazabilidad
