@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+import textwrap  # 🔴 IMPORTANTE: Soluciona el problema de los espacios de Markdown
 
 # Importación del backend modular
 from creador_precios import ejecutar_gemelo_digital
@@ -120,7 +121,8 @@ def generar_resumen_ejecutivo(df: pd.DataFrame) -> str:
         </tr>
         """
 
-    html_content = f"""
+    # 🔴 textwrap.dedent elimina los espacios de la izquierda automáticamente
+    html_content = textwrap.dedent(f"""
     <div style="max-width: 1100px; font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; border-top: 6px solid #2C3E50;">
         <h2 style="color: #2C3E50; margin-top: 0; font-size: 22px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">
             📊 Diagnóstico Gemelo Digital Solufar
@@ -189,7 +191,7 @@ def generar_resumen_ejecutivo(df: pd.DataFrame) -> str:
             </tbody>
         </table>
     </div>
-    """
+    """)
     return html_content
 
 # ==============================================================================
@@ -212,7 +214,6 @@ if menu == "📊 Resumen Ejecutivo Global":
     st.markdown("Radiografía financiera de la cartera evaluada demostrando el impacto del algoritmo predictivo frente a la inercia comercial.")
     
     html_resumen = generar_resumen_ejecutivo(df_trazabilidad)
-    # 🔴 INSTRUCCIÓN DE SEGURIDAD CORREGIDA
     st.markdown(html_resumen, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -258,8 +259,8 @@ elif menu == "🔍 Auditoría Detallada por SKU":
     # Conversión a tabla HTML cruda
     tabla_html = df_vista.to_html(escape=False, index=False, classes="tabla-bitacora")
     
-    # Inyección de CSS para diseño ejecutivo
-    estilo_tabla = f"""
+    # 🔴 textwrap.dedent elimina los espacios de la izquierda en la bitácora
+    estilo_tabla = textwrap.dedent(f"""
     <style>
         .tabla-bitacora {{
             background-color: #ffffff;
@@ -288,6 +289,6 @@ elif menu == "🔍 Auditoría Detallada por SKU":
     <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #ecf0f1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 10px;">
         {tabla_html}
     </div>
-    """
+    """)
     
     st.markdown(estilo_tabla, unsafe_allow_html=True)
