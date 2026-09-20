@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
-from IPython.display import HTML
 
 # Importación del backend modular
 from creador_precios import ejecutar_gemelo_digital
@@ -79,7 +78,8 @@ def crear_grafico_auditoria(df_trazabilidad, sku_nombre):
 
     return fig
 
-def generar_resumen_ejecutivo(df: pd.DataFrame) -> HTML:
+# 🔴 ELIMINAMOS LA REFERENCIA A "HTML" EN LA FLECHA DE TIPO (-> str)
+def generar_resumen_ejecutivo(df: pd.DataFrame) -> str:
     df_calc = df.dropna(subset=['Mes_Ano', 'Ctdad_Ordenada', 'Precio_Unitario', 'Costo_Unitario', 'Precio_Solufar_Emitido']).copy()
     
     ingresos_reales = (df_calc['Precio_Unitario'] * df_calc['Ctdad_Ordenada']).sum()
@@ -121,6 +121,7 @@ def generar_resumen_ejecutivo(df: pd.DataFrame) -> HTML:
         </tr>
         """
 
+    # 🔴 RETORNAMOS EL STRING PURO SIN LA FUNCIÓN "HTML()"
     html_content = f"""
     <div style="max-width: 1100px; font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; border-top: 6px solid #2C3E50;">
         <h2 style="color: #2C3E50; margin-top: 0; font-size: 22px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">
@@ -235,17 +236,17 @@ elif menu == "🔍 Auditoría Detallada por SKU":
     
     df_filtrado = df_trazabilidad[df_trazabilidad['Nombre_Producto'] == producto_sel].dropna(subset=['Precio_Solufar_Emitido', 'Costo_Unitario']).copy()
     
-    # 1. Aplicamos la misma función para la explicación detallada
+    # Aplicamos la misma función para la explicación detallada
     df_filtrado['Explicacion_Dinamica'] = df_filtrado.apply(generar_explicacion, axis=1)
     
-    # 2. Formateo de las columnas
+    # Formateo de las columnas
     df_filtrado['Mes'] = df_filtrado['Mes_Ano'].dt.strftime('%Y-%m')
     df_filtrado['Costo_Odoo'] = df_filtrado['Costo_Unitario'].apply(lambda x: f"${x:,.0f}")
     df_filtrado['Precio_Inercial'] = df_filtrado['Precio_Unitario'].apply(lambda x: f"${x:,.0f}")
     df_filtrado['Precio_Solufar'] = df_filtrado['Precio_Solufar_Emitido'].apply(lambda x: f"${x:,.0f}")
     df_filtrado['Margen_Final'] = df_filtrado['Margen_Pct_Final'].apply(lambda x: f"{x:.1f}%")
     
-    # 3. Selección y renombre
+    # Selección y renombre
     df_vista = df_filtrado[['Mes', 'Costo_Odoo', 'Precio_Inercial', 'Precio_Solufar', 'Margen_Final', 'Explicacion_Dinamica']].copy()
     df_vista.rename(columns={
         'Costo_Odoo': 'Costo Adquisición',
@@ -255,10 +256,10 @@ elif menu == "🔍 Auditoría Detallada por SKU":
         'Explicacion_Dinamica': 'Diagnóstico de Capas (Algoritmo)'
     }, inplace=True)
     
-    # 4. Conversión a tabla HTML cruda (escape=False evita que borre los íconos y negritas)
+    # Conversión a tabla HTML cruda (escape=False evita que borre los íconos y negritas)
     tabla_html = df_vista.to_html(escape=False, index=False, classes="tabla-bitacora")
     
-    # 5. Inyección de CSS para diseño ejecutivo
+    # Inyección de CSS para diseño ejecutivo
     estilo_tabla = f"""
     <style>
         .tabla-bitacora {{
