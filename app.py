@@ -78,7 +78,6 @@ def crear_grafico_auditoria(df_trazabilidad, sku_nombre):
 
     return fig
 
-# 🔴 ELIMINAMOS LA REFERENCIA A "HTML" EN LA FLECHA DE TIPO (-> str)
 def generar_resumen_ejecutivo(df: pd.DataFrame) -> str:
     df_calc = df.dropna(subset=['Mes_Ano', 'Ctdad_Ordenada', 'Precio_Unitario', 'Costo_Unitario', 'Precio_Solufar_Emitido']).copy()
     
@@ -121,7 +120,6 @@ def generar_resumen_ejecutivo(df: pd.DataFrame) -> str:
         </tr>
         """
 
-    # 🔴 RETORNAMOS EL STRING PURO SIN LA FUNCIÓN "HTML()"
     html_content = f"""
     <div style="max-width: 1100px; font-family: 'Segoe UI', Arial, sans-serif; padding: 25px; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; border-top: 6px solid #2C3E50;">
         <h2 style="color: #2C3E50; margin-top: 0; font-size: 22px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">
@@ -214,6 +212,7 @@ if menu == "📊 Resumen Ejecutivo Global":
     st.markdown("Radiografía financiera de la cartera evaluada demostrando el impacto del algoritmo predictivo frente a la inercia comercial.")
     
     html_resumen = generar_resumen_ejecutivo(df_trazabilidad)
+    # 🔴 INSTRUCCIÓN DE SEGURIDAD CORREGIDA
     st.markdown(html_resumen, unsafe_allow_html=True)
 
 # ==============================================================================
@@ -256,7 +255,7 @@ elif menu == "🔍 Auditoría Detallada por SKU":
         'Explicacion_Dinamica': 'Diagnóstico de Capas (Algoritmo)'
     }, inplace=True)
     
-    # Conversión a tabla HTML cruda (escape=False evita que borre los íconos y negritas)
+    # Conversión a tabla HTML cruda
     tabla_html = df_vista.to_html(escape=False, index=False, classes="tabla-bitacora")
     
     # Inyección de CSS para diseño ejecutivo
